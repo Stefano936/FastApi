@@ -10,8 +10,7 @@ class Actividades(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     descripcion = Column(String(255), nullable=False)
     costo = Column(Float, nullable=False)
-    
-"""
+
 class Equipamiento(Base):
     __tablename__ = "equipamiento"
     
@@ -22,6 +21,7 @@ class Equipamiento(Base):
     
     actividad = relationship("Actividades")
 
+"""
 class Instructores(Base):
     __tablename__ = "instructores"
     
