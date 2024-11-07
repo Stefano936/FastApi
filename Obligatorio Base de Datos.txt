@@ -1,0 +1,15 @@
+Obligatorio Base de Datos
+
+env/Scripts/activate
+-- uvicorn main:app --reload
+fastapi dev main.py
+
+
+
+Command to run this proyect: 
+ docker run -e DATABASE_URL="mysql+pymysql://root:rootpassword@host.docker.internal:3306/ObligatorioBase" -p 8000:8000 obli_backend
+
+Después de correr la base de datos lo que hago es borrar la existente y tiro el cmando y se genera una nueva.
+
+Poner esto en el buscador: 
+http://localhost:8000/clases
