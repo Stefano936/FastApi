@@ -48,3 +48,10 @@ class AlumnoClase(Base):
     id_clase = Column(Integer, ForeignKey('clase.id'), primary_key=True, nullable=False)
     ci_alumno = Column(CHAR(11), ForeignKey('alumnos.ci'), primary_key=True, nullable=False)
     id_equipamiento = Column(Integer, ForeignKey('equipamiento.id'), primary_key=True, nullable=False)
+
+class Turnos(Base):
+    __tablename__ = "turnos"
+    
+    id = Column(Integer, primary_key=True)
+    hora_inicio = Column(Time, nullable=False)
+    hora_fin = Column(Time, nullable=False)

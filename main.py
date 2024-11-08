@@ -3,14 +3,10 @@ from pydantic import BaseModel
 from typing import Annotated
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from models import Actividades
-from models import Equipamiento
-from models import Instructores
-from models import Clase
-from models import AlumnoClase
+from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase
 from squemas import ActividadCreate
 
-app = FastAPI()
+app = FastAPI()     
 def get_db():
     db = SessionLocal()
     try:
@@ -30,7 +26,7 @@ async def get_actividades(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No hay actividades")
     return actividades
 
-#Post para subir actividades NO ANDAAAAA
+#Post para subir actividades
 @app.post("/actividades")
 async def create_actividades(actividades:ActividadCreate, db: Session = Depends(get_db)):
     nuevaActividad = Actividades(descripcion=actividades.descripcion, costo=actividades.costo)
@@ -39,22 +35,19 @@ async def create_actividades(actividades:ActividadCreate, db: Session = Depends(
     db.refresh(nuevaActividad)
     return nuevaActividad
 
-"""
 #Put para modificar actividades
-@app.put("/actividades/{id}")
-async def update_actividades(id: int, actividades: Actividades, db: Session = Depends(get_db)):
-    db_actividades = db.query(Actividades).filter(Actividades.id == id).first()
-    if not db_actividades:
-        raise HTTPException(status_code=404, detail="Actividades not found")
-    db_actividades.nombre = actividades.nombre
-    db_actividades.descripcion = actividades.descripcion
-    db_actividades.duracion = actividades.duracion
-    db.commit()
-    db.refresh(db_actividades)
-    return db_actividades
-"""
+# @app.put("/actividades/{id}")
+# async def update_actividades(id: int, actividades: Actividades, db: Session = Depends(get_db)):
+#     db_actividades = db.query(Actividades).filter(Actividades.id == id).first()
+#     if not db_actividades:
+#         raise HTTPException(status_code=404, detail="Actividades not found")
+#     db_actividades.nombre = actividades.nombre
+#     db_actividades.descripcion = actividades.descripcion
+#     db_actividades.duracion = actividades.duracion
+#     db.commit()
+#     db.refresh(db_actividades)
+#     return None
 
-"""
 #Delete para borrar actividades
 @app.delete("/actividades/{id}")
 async def delete_actividades(id: int, db: Session = Depends(get_db)):
@@ -65,6 +58,11 @@ async def delete_actividades(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Actividades deleted successfully"}
 
+"""
+######################################################################
+#                            Equipamiento                            #
+######################################################################
+    
 #Get para obtener equipamiento
 @app.get("/equipamiento")
 async def get_equipamiento(db: Session = Depends(get_db)):
@@ -76,6 +74,11 @@ async def get_equipamiento(db: Session = Depends(get_db)):
 #Post para subir equipamiento
 #Put para modificar equipamiento
 #Delete para borrar equipamiento
+
+######################################################################
+#                            Instructores                            #
+######################################################################
+
 
 #Get para obtener instructores
 @app.get("/instructores")
