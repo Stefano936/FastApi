@@ -4,7 +4,7 @@ from typing import Annotated
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase
-from squemas import ActividadCreate
+from squemas import ActividadCreate, EquipamientoCreate
 
 app = FastAPI()     
 def get_db():
@@ -58,7 +58,7 @@ async def delete_actividades(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Actividades deleted successfully"}
 
-"""
+
 ######################################################################
 #                            Equipamiento                            #
 ######################################################################
@@ -72,9 +72,19 @@ async def get_equipamiento(db: Session = Depends(get_db)):
     return equipamiento
 
 #Post para subir equipamiento
+@app.post("/equipamiento")
+async def create_equipamiento(equipamiento:EquipamientoCreate, db: Session = Depends(get_db)):
+    nuevoEquipamiento = Equipamiento(id_actividad=equipamiento.id_actividad,descripcion=equipamiento.descripcion, costo=equipamiento.costo)
+    print(nuevoEquipamiento)
+    db.add(nuevoEquipamiento)
+    db.commit()
+    db.refresh(nuevoEquipamiento)
+    return nuevoEquipamiento
+
 #Put para modificar equipamiento
 #Delete para borrar equipamiento
 
+""""
 ######################################################################
 #                            Instructores                            #
 ######################################################################

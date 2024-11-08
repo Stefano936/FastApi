@@ -14,7 +14,7 @@ class Actividades(Base):
 class Equipamiento(Base):
     __tablename__ = "equipamiento"
     
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True,autoincrement=True)
     id_actividad = Column(Integer, ForeignKey('actividades.id'), nullable=False)
     descripcion = Column(String(255), nullable=False)
     costo = Column(Float, nullable=False)
@@ -32,7 +32,7 @@ class Instructores(Base):
 class Clase(Base):
     __tablename__ = "clase"
     
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     ci_instructor = Column(CHAR(11), ForeignKey('instructores.ci'), nullable=False)
     id_actividad = Column(Integer, ForeignKey('actividades.id'), nullable=False)
     id_turno = Column(Integer, ForeignKey('turnos.id'), nullable=False)
@@ -52,6 +52,6 @@ class AlumnoClase(Base):
 class Turnos(Base):
     __tablename__ = "turnos"
     
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     hora_inicio = Column(Time, nullable=False)
     hora_fin = Column(Time, nullable=False)
