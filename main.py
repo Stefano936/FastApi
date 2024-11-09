@@ -5,6 +5,7 @@ from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos
 from squemas import ActividadCreate, EquipamientoCreate, ActividadModify, EquipamientoModify, TurnoCreate, TurnoModify, InstructorCreate, InstructorModify
+from squemas import ClaseCreate, ClaseModify, AlumnoClaseCreate, AlumnoClaseModify
 
 app = FastAPI()     
 def get_db():
@@ -147,12 +148,12 @@ async def delete_instructores(ci: str, db: Session = Depends(get_db)):
     db.delete(db_instructores)
     db.commit()
     return {"message": "Instructor deleted successfully"}
-""""
+
 ######################################################################
 #                            Clases                                  #
 ######################################################################
 
-#Revisar este que no anda
+#Get para obtener clases
 @app.get("/clases")
 async def get_clases(db: Session = Depends(get_db)):
     clases = db.query(Clase).all()
@@ -160,7 +161,40 @@ async def get_clases(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No classes found")
     return clases
 
-    
+#Post para subir clases
+@app.post("/clases")
+async def create_clases(clases: ClaseCreate, db: Session = Depends(get_db)):
+    nuevaClase = Clase(ci_instructor=clases.ci_instructor, id_actividad=clases.id_actividad, id_turno=clases.id_turno, dictada=clases.dictada)
+    db.add(nuevaClase)
+    db.commit()
+    db.refresh(nuevaClase)
+    return nuevaClase
+
+#Put para modificar clases
+@app.put("/clases/{id}")
+async def update_clases(id: int, clases: ClaseModify, db: Session = Depends(get_db)):
+    db_clases = db.query(Clase).filter(Clase.id == id).first()
+    if not db_clases:
+        raise HTTPException(status_code=404, detail="Clase not found")
+    db_clases.ci_instructor = clases.ci_instructor
+    db_clases.id_actividad = clases.id_actividad
+    db_clases.id_turno = clases.id_turno
+    db_clases.dictada = clases.dictada
+    db.commit()
+    db.refresh(db_clases)
+    return db_clases
+
+#Delete para borrar clases
+@app.delete("/clases/{id}")
+async def delete_clases(id: int, db: Session = Depends(get_db)):
+    db_clases = db.query(Clase).filter(Clase.id == id).first()
+    if not db_clases:
+        raise HTTPException(status_code=404, detail="Clase not found")
+    db.delete(db_clases)
+    db.commit()
+    return {"message": "Clase deleted successfully"}
+
+""""
 ######################################################################
 #                            Alumnosclase                            #
 ######################################################################
@@ -221,8 +255,6 @@ async def delete_turnos(id: int, db: Session = Depends(get_db)):
 ######################################################################
 #                           Registro                                 #
 ######################################################################
-
-
 
 ######################################################################
 #                            Login                                   #

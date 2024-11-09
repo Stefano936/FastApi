@@ -54,3 +54,8 @@ class Turnos(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     hora_inicio = Column(Time, nullable=False)
     hora_fin = Column(Time, nullable=False)
+
+class Login():
+    correo = str
+    contraseña = str
+

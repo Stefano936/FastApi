@@ -28,6 +28,28 @@ class InstructorModify(BaseModel):
     nombre: str
     apellido: str
 
+class ClaseCreate(BaseModel):
+    ci_instructor: str
+    id_actividad: int
+    id_turno: int
+    dictada: bool
+
+class ClaseModify(BaseModel):
+    ci_instructor: str
+    id_actividad: int
+    id_turno: int
+    dictada: bool
+
+class AlumnoClaseCreate(BaseModel):
+    id_clase: int
+    ci_alumno: str
+    id_equipamiento: int
+
+class AlumnoClaseModify(BaseModel):
+    id_clase: int
+    ci_alumno: str
+    id_equipamiento: int
+
 class TurnoCreate(BaseModel):
     hora_inicio: str
     hora_fin: str
