@@ -4,7 +4,7 @@ from typing import Annotated
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos
-from squemas import ActividadCreate, EquipamientoCreate, ActividadModify, EquipamientoModify, TurnoCreate, TurnoModify
+from squemas import ActividadCreate, EquipamientoCreate, ActividadModify, EquipamientoModify, TurnoCreate, TurnoModify, InstructorCreate, InstructorModify
 
 app = FastAPI()     
 def get_db():
@@ -103,7 +103,7 @@ async def delete_equipamiento(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Equipamiento deleted successfully"}
 
-""""
+
 ######################################################################
 #                            Instructores                            #
 ######################################################################
@@ -117,6 +117,37 @@ async def get_instructores(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No instructors found")
     return instructores
 
+#Post para subir instructores
+@app.post("/instructores")
+async def create_instructores(instructores: InstructorCreate, db: Session = Depends(get_db)):
+    nuevoInstructor = Instructores(ci=instructores.ci, nombre=instructores.nombre, apellido=instructores.apellido)
+    db.add(nuevoInstructor)
+    db.commit()
+    db.refresh(nuevoInstructor)
+    return nuevoInstructor
+
+#Put para modificar instructores
+@app.put("/instructores/{ci}")
+async def update_instructores(ci: str, instructores: InstructorModify, db: Session = Depends(get_db)):
+    db_instructores = db.query(Instructores).filter(Instructores.ci == ci).first()
+    if not db_instructores:
+        raise HTTPException(status_code=404, detail="Instructor not found")
+    db_instructores.nombre = instructores.nombre
+    db_instructores.apellido = instructores.apellido
+    db.commit()
+    db.refresh(db_instructores)
+    return db_instructores
+
+#Delete para borrar instructores
+@app.delete("/instructores/{ci}")
+async def delete_instructores(ci: str, db: Session = Depends(get_db)):
+    db_instructores = db.query(Instructores).filter(Instructores.ci == ci).first()
+    if not db_instructores:
+        raise HTTPException(status_code=404, detail="Instructor not found")
+    db.delete(db_instructores)
+    db.commit()
+    return {"message": "Instructor deleted successfully"}
+""""
 ######################################################################
 #                            Clases                                  #
 ######################################################################

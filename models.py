@@ -27,7 +27,6 @@ class Instructores(Base):
     ci = Column(CHAR(11), primary_key=True, nullable=False)
     nombre = Column(String(255), nullable=False)
     apellido = Column(String(255), nullable=False)
-    correo = Column(String(255))
 
 class Clase(Base):
     __tablename__ = "clase"

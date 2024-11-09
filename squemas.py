@@ -18,6 +18,16 @@ class EquipamientoModify(BaseModel):
     descripcion: str
     costo: float
 
+class InstructorCreate(BaseModel):
+    ci: str
+    nombre: str
+    apellido: str
+
+class InstructorModify(BaseModel):
+    ci: str
+    nombre: str
+    apellido: str
+
 class TurnoCreate(BaseModel):
     hora_inicio: str
     hora_fin: str
