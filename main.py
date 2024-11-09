@@ -3,8 +3,8 @@ from pydantic import BaseModel
 from typing import Annotated
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase
-from squemas import ActividadCreate, EquipamientoCreate, ActividadModify
+from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos
+from squemas import ActividadCreate, EquipamientoCreate, ActividadModify, EquipamientoModify, TurnoCreate, TurnoModify
 
 app = FastAPI()     
 def get_db():
@@ -82,7 +82,7 @@ async def create_equipamiento(equipamiento:EquipamientoCreate, db: Session = Dep
 
 #Put para modificar equipamiento
 @app.put("/equipamiento/{id}")
-async def update_equipamiento(id: int, equipamiento: EquipamientoCreate, db: Session = Depends(get_db)):
+async def update_equipamiento(id: int, equipamiento: EquipamientoModify, db: Session = Depends(get_db)):
     db_equipamiento = db.query(Equipamiento).filter(Equipamiento.id == id).first()
     if not db_equipamiento:
         raise HTTPException(status_code=404, detail="Equipamiento not found")
@@ -147,6 +147,45 @@ async def get_alumnosclase(db: Session = Depends(get_db)):
 ######################################################################
 #                            Turnos                                  #
 ######################################################################
+
+#Get para obtener turnos
+@app.get("/turnos")
+async def get_turnos(db: Session = Depends(get_db)):
+    turnos = db.query(Turnos).all()
+    if not turnos:
+        raise HTTPException(status_code=404, detail="No turnos found")
+    return turnos
+
+#Post para subir turnos
+@app.post("/turnos")
+async def create_turnos(turnos: TurnoCreate, db: Session = Depends(get_db)):
+    nuevoTurno = Turnos(hora_inicio=turnos.hora_inicio, hora_fin=turnos.hora_fin)
+    db.add(nuevoTurno)
+    db.commit()
+    db.refresh(nuevoTurno)
+    return nuevoTurno
+
+#Put para modificar turnos
+@app.put("/turnos/{id}")
+async def update_turnos(id: int, turnos: TurnoModify, db: Session = Depends(get_db)):
+    db_turnos = db.query(Turnos).filter(Turnos.id == id).first()
+    if not db_turnos:
+        raise HTTPException(status_code=404, detail="Turnos not found")
+    db_turnos.hora_inicio = turnos.hora_inicio
+    db_turnos.hora_fin = turnos.hora_fin
+    db.commit()
+    db.refresh(db_turnos)
+    return db_turnos
+
+#Delete para borrar turnos
+@app.delete("/turnos/{id}")
+async def delete_turnos(id: int, db: Session = Depends(get_db)):
+    db_turnos = db.query(Turnos).filter(Turnos.id == id).first()
+    if not db_turnos:
+        raise HTTPException(status_code=404, detail="Turnos not found")
+    db.delete(db_turnos)
+    db.commit()
+    return {"message": "Turnos deleted successfully"}
 
 ######################################################################
 #                           Registro                                 #
