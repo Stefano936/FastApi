@@ -194,12 +194,11 @@ async def delete_clases(id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Clase deleted successfully"}
 
-""""
 ######################################################################
 #                            Alumnosclase                            #
 ######################################################################
 
-#Revisar este que no anda
+#Get para obtener alumnosclase
 @app.get("/alumnosclase")
 async def get_alumnosclase(db: Session = Depends(get_db)):
     alumnosclase = db.query(AlumnoClase).all()
@@ -207,7 +206,12 @@ async def get_alumnosclase(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No alumnosclase found")
     return alumnosclase
 
-"""
+#Post para subir alumnosclase
+
+#Put para modificar alumnosclase
+
+#Delete para borrar alumnosclase
+
 
 ######################################################################
 #                            Turnos                                  #
