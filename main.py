@@ -81,6 +81,17 @@ async def create_equipamiento(equipamiento:EquipamientoCreate, db: Session = Dep
     return nuevoEquipamiento
 
 #Put para modificar equipamiento
+@app.put("/equipamiento/{id}")
+async def update_equipamiento(id: int, equipamiento: EquipamientoCreate, db: Session = Depends(get_db)):
+    db_equipamiento = db.query(Equipamiento).filter(Equipamiento.id == id).first()
+    if not db_equipamiento:
+        raise HTTPException(status_code=404, detail="Equipamiento not found")
+    db_equipamiento.id_actividad = equipamiento.id_actividad
+    db_equipamiento.descripcion = equipamiento.descripcion
+    db_equipamiento.costo = equipamiento.costo
+    db.commit()
+    db.refresh(db_equipamiento)
+    return db_equipamiento
 
 #Delete para borrar equipamiento
 @app.delete("/equipamiento/{id}")
