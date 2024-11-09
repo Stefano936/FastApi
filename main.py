@@ -206,7 +206,7 @@ async def get_alumnosclase(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No alumnosclase found")
     return alumnosclase
 
-#Post para subir alumnosclase
+#Post para subir alumnosclase, para poder hacer un post tengo que modificar la tabla de alumnos ci_alumnos
 
 #Put para modificar alumnosclase
 
