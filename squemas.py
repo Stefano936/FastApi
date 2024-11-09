@@ -40,6 +40,30 @@ class ClaseModify(BaseModel):
     id_turno: int
     dictada: bool
 
+class TurnoCreate(BaseModel):
+    hora_inicio: str
+    hora_fin: str
+
+class TurnoModify(BaseModel):
+    hora_inicio: str
+    hora_fin: str
+
+class AlumnoCreate(BaseModel):
+    ci: str
+    nombre: str
+    apellido: str
+    telefono: str
+    fecha_nacimiento: str
+    correo : str
+
+class AlumnoModify(BaseModel):
+    ci: str
+    nombre: str
+    apellido: str
+    telefono: str
+    fecha_nacimiento: str
+    correo : str
+
 class AlumnoClaseCreate(BaseModel):
     id_clase: int
     ci_alumno: str
@@ -49,13 +73,5 @@ class AlumnoClaseModify(BaseModel):
     id_clase: int
     ci_alumno: str
     id_equipamiento: int
-
-class TurnoCreate(BaseModel):
-    hora_inicio: str
-    hora_fin: str
-
-class TurnoModify(BaseModel):
-    hora_inicio: str
-    hora_fin: str
 
 #Aca lo que hay que poner es que se agregue el resto de metodos que faltan y hay que modificar el models

@@ -3,9 +3,9 @@ from pydantic import BaseModel
 from typing import Annotated
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos
+from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos, Alumnos
 from squemas import ActividadCreate, EquipamientoCreate, ActividadModify, EquipamientoModify, TurnoCreate, TurnoModify, InstructorCreate, InstructorModify
-from squemas import ClaseCreate, ClaseModify, AlumnoClaseCreate, AlumnoClaseModify
+from squemas import ClaseCreate, ClaseModify, AlumnoCreate, AlumnoModify
 
 app = FastAPI()     
 def get_db():
@@ -195,25 +195,6 @@ async def delete_clases(id: int, db: Session = Depends(get_db)):
     return {"message": "Clase deleted successfully"}
 
 ######################################################################
-#                            Alumnosclase                            #
-######################################################################
-
-#Get para obtener alumnosclase
-@app.get("/alumnosclase")
-async def get_alumnosclase(db: Session = Depends(get_db)):
-    alumnosclase = db.query(AlumnoClase).all()
-    if not alumnosclase:
-        raise HTTPException(status_code=404, detail="No alumnosclase found")
-    return alumnosclase
-
-#Post para subir alumnosclase, para poder hacer un post tengo que modificar la tabla de alumnos ci_alumnos
-
-#Put para modificar alumnosclase
-
-#Delete para borrar alumnosclase
-
-
-######################################################################
 #                            Turnos                                  #
 ######################################################################
 
@@ -257,9 +238,82 @@ async def delete_turnos(id: int, db: Session = Depends(get_db)):
     return {"message": "Turnos deleted successfully"}
 
 ######################################################################
+#                            Alumnos                                 #
+######################################################################
+
+#Get para obtener alumnos
+@app.get("/alumnos")
+async def get_alumnos(db: Session = Depends(get_db)):
+    alumnos = db.query(Alumnos).all()
+    if not alumnos:
+        raise HTTPException(status_code=404, detail="No alumnos found")
+    return alumnos
+
+#Post para subir alumnos
+@app.post("/alumnos")
+async def create_alumnos(alumnos: AlumnoCreate, db: Session = Depends(get_db)):
+    nuevoAlumno = Alumnos(
+        ci=alumnos.ci,
+        nombre=alumnos.nombre,
+        apellido=alumnos.apellido,
+        telefono=alumnos.telefono,
+        fecha_nacimiento=alumnos.fecha_nacimiento,
+        correo=alumnos.correo
+    )
+    db.add(nuevoAlumno)
+    db.commit()
+    db.refresh(nuevoAlumno)
+    return nuevoAlumno
+
+#Put para modificar alumnos
+@app.put("/alumnos/{ci}")
+async def update_alumnos(ci: str, alumnos: AlumnoModify, db: Session = Depends(get_db)):
+    db_alumnos = db.query(Alumnos).filter(Alumnos.ci == ci).first()
+    if not db_alumnos:
+        raise HTTPException(status_code=404, detail="Alumno not found")
+    db_alumnos.nombre = alumnos.nombre
+    db_alumnos.apellido = alumnos.apellido
+    db_alumnos.telefono = alumnos.telefono
+    db_alumnos.fecha_nacimiento = alumnos.fecha_nacimiento
+    db_alumnos.correo = alumnos.correo
+    db.commit()
+    db.refresh(db_alumnos)
+    return db_alumnos
+
+#Delete para borrar alumnos
+@app.delete("/alumnos/{ci}")
+async def delete_alumnos(ci: str, db: Session = Depends(get_db)):
+    db_alumnos = db.query(Alumnos).filter(Alumnos.ci == ci).first()
+    if not db_alumnos:
+        raise HTTPException(status_code=404, detail="Alumno not found")
+    db.delete(db_alumnos)
+    db.commit()
+    return {"message": "Alumno deleted successfully"}
+
+######################################################################
 #                           Registro                                 #
 ######################################################################
 
 ######################################################################
 #                            Login                                   #
 ######################################################################
+
+"""
+######################################################################
+#                            Alumnosclase                            #
+######################################################################
+
+#Get para obtener alumnosclase
+@app.get("/alumnosclase")
+async def get_alumnosclase(db: Session = Depends(get_db)):
+    alumnosclase = db.query(AlumnoClase).all()
+    if not alumnosclase:
+        raise HTTPException(status_code=404, detail="No alumnosclase found")
+    return alumnosclase
+
+#Post para subir alumnosclase, para poder hacer un post tengo que modificar la tabla de alumnos ci_alumnos
+
+#Put para modificar alumnosclase
+
+#Delete para borrar alumnosclase
+"""

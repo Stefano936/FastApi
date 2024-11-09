@@ -55,7 +55,12 @@ class Turnos(Base):
     hora_inicio = Column(Time, nullable=False)
     hora_fin = Column(Time, nullable=False)
 
-class Login():
-    correo = str
-    contraseña = str
-
+class Alumnos(Base):
+    __tablename__ = "alumnos"
+    
+    ci = Column(CHAR(11), primary_key=True, nullable=False)
+    nombre = Column(String(255), nullable=False)
+    telefono = Column(String(15), nullable=False)
+    apellido = Column(String(255), nullable=False)
+    fecha_nacimiento = Column(Date, nullable=False)
+    correo = Column(String(255), nullable=False)
