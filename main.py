@@ -4,7 +4,7 @@ from typing import Annotated
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase
-from squemas import ActividadCreate, EquipamientoCreate
+from squemas import ActividadCreate, EquipamientoCreate, ActividadModify
 
 app = FastAPI()     
 def get_db():
@@ -36,17 +36,16 @@ async def create_actividades(actividades:ActividadCreate, db: Session = Depends(
     return nuevaActividad
 
 #Put para modificar actividades
-# @app.put("/actividades/{id}")
-# async def update_actividades(id: int, actividades: Actividades, db: Session = Depends(get_db)):
-#     db_actividades = db.query(Actividades).filter(Actividades.id == id).first()
-#     if not db_actividades:
-#         raise HTTPException(status_code=404, detail="Actividades not found")
-#     db_actividades.nombre = actividades.nombre
-#     db_actividades.descripcion = actividades.descripcion
-#     db_actividades.duracion = actividades.duracion
-#     db.commit()
-#     db.refresh(db_actividades)
-#     return None
+@app.put("/actividades/{id}")
+async def update_actividades(id: int, actividades: ActividadModify, db: Session = Depends(get_db)):
+    db_actividades = db.query(Actividades).filter(Actividades.id == id).first()
+    if not db_actividades:
+        raise HTTPException(status_code=404, detail="Actividades not found")
+    db_actividades.descripcion = actividades.descripcion
+    db_actividades.costo = actividades.costo
+    db.commit()
+    db.refresh(db_actividades)
+    return db_actividades
 
 #Delete para borrar actividades
 @app.delete("/actividades/{id}")
@@ -133,3 +132,15 @@ async def get_alumnosclase(db: Session = Depends(get_db)):
     return alumnosclase
 
 """
+
+######################################################################
+#                            Turnos                                  #
+######################################################################
+
+######################################################################
+#                           Registro                                 #
+######################################################################
+
+######################################################################
+#                            Login                                   #
+######################################################################
