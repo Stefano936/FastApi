@@ -66,12 +66,12 @@ class AlumnoModify(BaseModel):
 
 class AlumnoClaseCreate(BaseModel):
     id_clase: int
-    ci_alumno: str
+    ci: str
     id_equipamiento: int
 
 class AlumnoClaseModify(BaseModel):
     id_clase: int
-    ci_alumno: str
+    ci: str
     id_equipamiento: int
 
 #Aca lo que hay que poner es que se agregue el resto de metodos que faltan y hay que modificar el models
