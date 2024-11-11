@@ -5,7 +5,7 @@ from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos, Alumnos
 from squemas import ActividadCreate, EquipamientoCreate, ActividadModify, EquipamientoModify, TurnoCreate, TurnoModify, InstructorCreate, InstructorModify
-from squemas import ClaseCreate, ClaseModify, AlumnoCreate, AlumnoModify
+from squemas import ClaseCreate, ClaseModify, AlumnoCreate, AlumnoModify, AlumnoClaseCreate, AlumnoClaseModify
 
 app = FastAPI()     
 def get_db():
@@ -298,7 +298,6 @@ async def delete_alumnos(ci: str, db: Session = Depends(get_db)):
 #                            Login                                   #
 ######################################################################
 
-"""
 ######################################################################
 #                            Alumnosclase                            #
 ######################################################################
@@ -312,8 +311,33 @@ async def get_alumnosclase(db: Session = Depends(get_db)):
     return alumnosclase
 
 #Post para subir alumnosclase, para poder hacer un post tengo que modificar la tabla de alumnos ci_alumnos
+@app.post("/alumnosclase")
+async def create_alumnosclase(alumnosclase: AlumnoClaseCreate, db: Session = Depends(get_db)):
+    nuevoAlumnoClase = AlumnoClase(id_clase=alumnosclase.id_clase, ci=alumnosclase.ci, id_equipamiento=alumnosclase.id_equipamiento)
+    db.add(nuevoAlumnoClase)
+    db.commit()
+    db.refresh(nuevoAlumnoClase)
+    return nuevoAlumnoClase 
 
 #Put para modificar alumnosclase
+@app.put("/alumnosclase/{id_clase}/{ci}/{id_equipamiento}")
+async def update_alumnosclase(id_clase: int, ci: str, id_equipamiento: int, alumnosclase: AlumnoClaseModify, db: Session = Depends(get_db)):
+    db_alumnosclase = db.query(AlumnoClase).filter(AlumnoClase.id_clase == id_clase, AlumnoClase.ci == ci, AlumnoClase.id_equipamiento == id_equipamiento).first()
+    if not db_alumnosclase:
+        raise HTTPException(status_code=404, detail="AlumnoClase not found")
+    db_alumnosclase.id_clase = alumnosclase.id_clase
+    db_alumnosclase.ci = alumnosclase.ci
+    db_alumnosclase.id_equipamiento = alumnosclase.id_equipamiento
+    db.commit()
+    db.refresh(db_alumnosclase)
+    return db_alumnosclase
 
 #Delete para borrar alumnosclase
-"""
+@app.delete("/alumnosclase/{id_clase}/{ci}/{id_equipamiento}")
+async def delete_alumnosclase(id_clase: int, ci: str, id_equipamiento: int, db: Session = Depends(get_db)):
+    db_alumnosclase = db.query(AlumnoClase).filter(AlumnoClase.id_clase == id_clase, AlumnoClase.ci == ci, AlumnoClase.id_equipamiento == id_equipamiento).first()
+    if not db_alumnosclase:
+        raise HTTPException(status_code=404, detail="AlumnoClase not found")
+    db.delete(db_alumnosclase)
+    db.commit()
+    return {"message": "AlumnoClase deleted successfully"}

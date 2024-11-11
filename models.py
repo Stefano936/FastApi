@@ -45,7 +45,7 @@ class AlumnoClase(Base):
     __tablename__ = "alumno_clase"
     
     id_clase = Column(Integer, ForeignKey('clase.id'), primary_key=True, nullable=False)
-    ci_alumno = Column(CHAR(11), ForeignKey('alumnos.ci'), primary_key=True, nullable=False)
+    ci = Column(CHAR(11), ForeignKey('alumnos.ci'), primary_key=True, nullable=False)
     id_equipamiento = Column(Integer, ForeignKey('equipamiento.id'), primary_key=True, nullable=False)
 
 class Turnos(Base):
