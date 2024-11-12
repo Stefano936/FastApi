@@ -1,6 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Annotated
+from fastapi.middleware.cors import CORSMiddleware
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos, Alumnos
@@ -14,6 +15,14 @@ def get_db():
         yield db
     finally:
         db.close()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 ######################################################################
 #                            Actividades                             #
