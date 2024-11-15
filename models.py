@@ -64,3 +64,9 @@ class Alumnos(Base):
     apellido = Column(String(255), nullable=False)
     fecha_nacimiento = Column(Date, nullable=False)
     correo = Column(String(255), nullable=False)
+
+class User(Base):
+    __tablename__ = "login"
+    ci = Column(String(11), index=True, nullable=False)
+    correo = Column(String(255), primary_key=True, nullable=False)
+    contraseña = Column(String(255), nullable=False)
