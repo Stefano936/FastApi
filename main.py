@@ -1,12 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Annotated
-from fastapi.middleware.cors import CORSMiddleware
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
-from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos, Alumnos
+from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos, Alumnos, User
 from squemas import ActividadCreate, EquipamientoCreate, ActividadModify, EquipamientoModify, TurnoCreate, TurnoModify, InstructorCreate, InstructorModify
-from squemas import ClaseCreate, ClaseModify, AlumnoCreate, AlumnoModify, AlumnoClaseCreate, AlumnoClaseModify
+from squemas import ClaseCreate, ClaseModify, AlumnoCreate, AlumnoModify, AlumnoClaseCreate, AlumnoClaseModify, LoginRequest
 
 app = FastAPI()     
 def get_db():
@@ -18,7 +18,7 @@ def get_db():
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["http://localhost:5173"], 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -292,12 +292,15 @@ async def update_alumnos(ci: str, alumnos: AlumnoModify, db: Session = Depends(g
 #Delete para borrar alumnos
 @app.delete("/alumnos/{ci}")
 async def delete_alumnos(ci: str, db: Session = Depends(get_db)):
+    query_alumnos = f"select * from alumnos where ci == {ci}"
     db_alumnos = db.query(Alumnos).filter(Alumnos.ci == ci).first()
     if not db_alumnos:
         raise HTTPException(status_code=404, detail="Alumno not found")
     db.delete(db_alumnos)
     db.commit()
     return {"message": "Alumno deleted successfully"}
+
+#En vez de filter tenemos que usar el query, select algo from tabla ta
 
 ######################################################################
 #                           Registro                                 #
@@ -307,6 +310,14 @@ async def delete_alumnos(ci: str, db: Session = Depends(get_db)):
 #                            Login                                   #
 ######################################################################
 
+@app.post("/login")
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.ci == request.ci).first()
+    if user and user.contraseña == request.contraseña:
+        return {"message": "Login successful", "correo": user.correo}
+    else:
+        raise HTTPException(status_code=401, detail="Invalid CI or password")
+    
 ######################################################################
 #                            Alumnosclase                            #
 ######################################################################

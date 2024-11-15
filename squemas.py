@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from datetime import date
 
 class ActividadCreate(BaseModel):
     descripcion: str
@@ -53,7 +54,7 @@ class AlumnoCreate(BaseModel):
     nombre: str
     apellido: str
     telefono: str
-    fecha_nacimiento: str
+    fecha_nacimiento: date
     correo : str
 
 class AlumnoModify(BaseModel):
@@ -61,7 +62,7 @@ class AlumnoModify(BaseModel):
     nombre: str
     apellido: str
     telefono: str
-    fecha_nacimiento: str
+    fecha_nacimiento: date
     correo : str
 
 class AlumnoClaseCreate(BaseModel):
@@ -74,4 +75,8 @@ class AlumnoClaseModify(BaseModel):
     ci: str
     id_equipamiento: int
 
+class LoginRequest(BaseModel):
+    ci: str
+    contraseña: str
+    
 #Aca lo que hay que poner es que se agregue el resto de metodos que faltan y hay que modificar el models
