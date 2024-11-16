@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Annotated
+from sqlalchemy import text
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
 from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos, Alumnos, User
@@ -253,50 +254,111 @@ async def delete_turnos(id: int, db: Session = Depends(get_db)):
 #Get para obtener alumnos
 @app.get("/alumnos")
 async def get_alumnos(db: Session = Depends(get_db)):
-    alumnos = db.query(Alumnos).all()
-    if not alumnos:
+    query_alumnos = text("SELECT * FROM alumnos")
+    result = db.execute(query_alumnos).fetchall()
+    if not result:
         raise HTTPException(status_code=404, detail="No alumnos found")
+    
+    alumnos = []
+    for row in result:
+        alumno = {
+            "ci": row[0],
+            "nombre": row[1],
+            "apellido": row[2],
+            "telefono": row[3],
+            "fecha_nacimiento": row[4],
+            "correo": row[5]
+        }
+        alumnos.append(alumno)
+        
     return alumnos
 
 #Post para subir alumnos
 @app.post("/alumnos")
 async def create_alumnos(alumnos: AlumnoCreate, db: Session = Depends(get_db)):
-    nuevoAlumno = Alumnos(
-        ci=alumnos.ci,
-        nombre=alumnos.nombre,
-        apellido=alumnos.apellido,
-        telefono=alumnos.telefono,
-        fecha_nacimiento=alumnos.fecha_nacimiento,
-        correo=alumnos.correo
-    )
-    db.add(nuevoAlumno)
+    query_insert = text("""
+        INSERT INTO alumnos (ci, nombre, apellido, telefono, fecha_nacimiento, correo)
+        VALUES (:ci, :nombre, :apellido, :telefono, :fecha_nacimiento, :correo)
+    """)
+    db.execute(query_insert, {
+        "ci": alumnos.ci,
+        "nombre": alumnos.nombre,
+        "apellido": alumnos.apellido,
+        "telefono": alumnos.telefono,
+        "fecha_nacimiento": alumnos.fecha_nacimiento,
+        "correo": alumnos.correo
+    })
     db.commit()
-    db.refresh(nuevoAlumno)
-    return nuevoAlumno
+    
+    query_alumno = text("SELECT * FROM alumnos WHERE ci = :ci")
+    result = db.execute(query_alumno, {"ci": alumnos.ci}).fetchone()
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Alumno not found after creation")
+    
+    alumno = {
+        "ci": result[0],
+        "nombre": result[1],
+        "apellido": result[2],
+        "telefono": result[3],
+        "fecha_nacimiento": result[4],
+        "correo": result[5]
+    }
+    
+    return alumno
 
 #Put para modificar alumnos
 @app.put("/alumnos/{ci}")
-async def update_alumnos(ci: str, alumnos: AlumnoModify, db: Session = Depends(get_db)):
-    db_alumnos = db.query(Alumnos).filter(Alumnos.ci == ci).first()
-    if not db_alumnos:
+async def update_alumnos(ci: str, alumnos: dict, db: Session = Depends(get_db)):
+    print(alumnos)
+    query_alumnos = text("SELECT * FROM alumnos WHERE ci = :ci")
+    result = db.execute(query_alumnos, {"ci": ci}).fetchone()
+    
+    if not result:
         raise HTTPException(status_code=404, detail="Alumno not found")
-    db_alumnos.nombre = alumnos.nombre
-    db_alumnos.apellido = alumnos.apellido
-    db_alumnos.telefono = alumnos.telefono
-    db_alumnos.fecha_nacimiento = alumnos.fecha_nacimiento
-    db_alumnos.correo = alumnos.correo
+    
+    query_update = text("""
+        UPDATE alumnos
+        SET nombre = :nombre, apellido = :apellido,  fecha_nacimiento = :fecha_nacimiento,telefono = :telefono, correo = :correo
+        WHERE ci = :ci
+    """)
+    db.execute(query_update, {
+        "nombre": alumnos.get("nombre"),
+        "apellido": alumnos.get("apellido"),
+        "telefono": alumnos.get("telefono"),
+        "fecha_nacimiento": alumnos.get("fecha_nacimiento"),
+        "correo": alumnos.get("correo"),
+        "ci": alumnos.get("ci")
+    })
     db.commit()
-    db.refresh(db_alumnos)
-    return db_alumnos
+    
+    query_alumno = text("SELECT * FROM alumnos WHERE ci = :ci")
+    result = db.execute(query_alumno, {"ci": ci}).fetchone()
+    
+    if not result:
+        raise HTTPException(status_code=404, detail="Alumno not found after update")
+    
+    alumno = {
+        "ci": result[0],
+        "nombre": result[1],
+        "apellido": result[2],
+        "telefono": result[3],
+        "fecha_nacimiento": result[4],
+        "correo": result[5]
+    }
+    
+    return alumno
 
 #Delete para borrar alumnos
 @app.delete("/alumnos/{ci}")
 async def delete_alumnos(ci: str, db: Session = Depends(get_db)):
-    query_alumnos = f"select * from alumnos where ci == {ci}"
-    db_alumnos = db.query(Alumnos).filter(Alumnos.ci == ci).first()
-    if not db_alumnos:
+    query_alumnos = text(f"SELECT * FROM alumnos WHERE ci = {ci}")
+    result = db.execute(query_alumnos).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Alumno not found")
-    db.delete(db_alumnos)
+
+    query_delete = text(f"DELETE FROM alumnos WHERE ci = {ci}")
+    db.execute(query_delete)
     db.commit()
     return {"message": "Alumno deleted successfully"}
 
