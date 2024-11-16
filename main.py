@@ -694,10 +694,6 @@ async def delete_alumnos(ci: str, db: Session = Depends(get_db)):
     return {"message": "Alumno deleted successfully"}
 
 ######################################################################
-#                           Registro                                 #
-######################################################################
-
-######################################################################
 #                            Login                                   #
 ######################################################################
 
@@ -716,39 +712,151 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 #Get para obtener alumnosclase
 @app.get("/alumnosclase")
 async def get_alumnosclase(db: Session = Depends(get_db)):
-    alumnosclase = db.query(AlumnoClase).all()
-    if not alumnosclase:
+    query_alumnosclase = text("SELECT * FROM alumno_clase")
+    result = db.execute(query_alumnosclase).fetchall()
+    if not result:
         raise HTTPException(status_code=404, detail="No alumnosclase found")
+    
+    alumnosclase = []
+    for row in result:
+        alumno_clase = {
+            "id_clase": row[0],
+            "ci": row[1],
+            "id_equipamiento": row[2]
+        }
+        alumnosclase.append(alumno_clase)
+        
     return alumnosclase
 
 #Post para subir alumnosclase, para poder hacer un post tengo que modificar la tabla de alumnos ci_alumnos
 @app.post("/alumnosclase")
-async def create_alumnosclase(alumnosclase: AlumnoClaseCreate, db: Session = Depends(get_db)):
-    nuevoAlumnoClase = AlumnoClase(id_clase=alumnosclase.id_clase, ci=alumnosclase.ci, id_equipamiento=alumnosclase.id_equipamiento)
-    db.add(nuevoAlumnoClase)
+async def create_alumnosclase(alumnosclase: dict, db: Session = Depends(get_db)):
+    # Verificar si la entrada ya existe
+    query_check = text("""
+        SELECT * FROM alumno_clase
+        WHERE id_clase = :id_clase AND ci = :ci AND id_equipamiento = :id_equipamiento
+    """)
+    existing_entry = db.execute(query_check, {
+        "id_clase": alumnosclase["id_clase"],
+        "ci": alumnosclase["ci"],
+        "id_equipamiento": alumnosclase["id_equipamiento"]
+    }).fetchone()
+    
+    if existing_entry:
+        raise HTTPException(status_code=400, detail="Duplicate entry for alumno_clase")
+    
+    # Insertar la nueva entrada
+    query_insert = text("""
+        INSERT INTO alumno_clase (id_clase, ci, id_equipamiento)
+        VALUES (:id_clase, :ci, :id_equipamiento)
+    """)
+    db.execute(query_insert, {
+        "id_clase": alumnosclase["id_clase"],
+        "ci": alumnosclase["ci"],
+        "id_equipamiento": alumnosclase["id_equipamiento"]
+    })
     db.commit()
-    db.refresh(nuevoAlumnoClase)
-    return nuevoAlumnoClase 
+    
+    query_last_inserted = text("""
+        SELECT id_clase, ci, id_equipamiento
+        FROM alumno_clase
+        WHERE id_clase = :id_clase AND ci = :ci AND id_equipamiento = :id_equipamiento
+    """)
+    nuevoAlumnoClase = db.execute(query_last_inserted, {
+        "id_clase": alumnosclase["id_clase"],
+        "ci": alumnosclase["ci"],
+        "id_equipamiento": alumnosclase["id_equipamiento"]
+    }).fetchone()
+    
+    if not nuevoAlumnoClase:
+        raise HTTPException(status_code=404, detail="AlumnoClase not found after creation")
+    
+    alumno_clase_dict = {
+        "id_clase": nuevoAlumnoClase[0],
+        "ci": nuevoAlumnoClase[1],
+        "id_equipamiento": nuevoAlumnoClase[2]
+    }
+    
+    return alumno_clase_dict
 
 #Put para modificar alumnosclase
 @app.put("/alumnosclase/{id_clase}/{ci}/{id_equipamiento}")
-async def update_alumnosclase(id_clase: int, ci: str, id_equipamiento: int, alumnosclase: AlumnoClaseModify, db: Session = Depends(get_db)):
-    db_alumnosclase = db.query(AlumnoClase).filter(AlumnoClase.id_clase == id_clase, AlumnoClase.ci == ci, AlumnoClase.id_equipamiento == id_equipamiento).first()
-    if not db_alumnosclase:
+async def update_alumnosclase(id_clase: int, ci: str, id_equipamiento: int, alumnosclase: dict, db: Session = Depends(get_db)):
+    query_alumnosclase = text("""
+        SELECT * FROM alumno_clase
+        WHERE id_clase = :id_clase AND ci = :ci AND id_equipamiento = :id_equipamiento
+    """)
+    result = db.execute(query_alumnosclase, {
+        "id_clase": id_clase,
+        "ci": ci,
+        "id_equipamiento": id_equipamiento
+    }).fetchone()
+    
+    if not result:
         raise HTTPException(status_code=404, detail="AlumnoClase not found")
-    db_alumnosclase.id_clase = alumnosclase.id_clase
-    db_alumnosclase.ci = alumnosclase.ci
-    db_alumnosclase.id_equipamiento = alumnosclase.id_equipamiento
+    
+    query_update = text("""
+        UPDATE alumno_clase
+        SET id_clase = :new_id_clase, ci = :new_ci, id_equipamiento = :new_id_equipamiento
+        WHERE id_clase = :id_clase AND ci = :ci AND id_equipamiento = :id_equipamiento
+    """)
+    db.execute(query_update, {
+        "new_id_clase": alumnosclase["id_clase"],
+        "new_ci": alumnosclase["ci"],
+        "new_id_equipamiento": alumnosclase["id_equipamiento"],
+        "id_clase": id_clase,
+        "ci": ci,
+        "id_equipamiento": id_equipamiento
+    })
     db.commit()
-    db.refresh(db_alumnosclase)
-    return db_alumnosclase
+    
+    query_updated = text("""
+        SELECT id_clase, ci, id_equipamiento
+        FROM alumno_clase
+        WHERE id_clase = :id_clase AND ci = :ci AND id_equipamiento = :id_equipamiento
+    """)
+    updatedAlumnoClase = db.execute(query_updated, {
+        "id_clase": alumnosclase["id_clase"],
+        "ci": alumnosclase["ci"],
+        "id_equipamiento": alumnosclase["id_equipamiento"]
+    }).fetchone()
+    
+    if not updatedAlumnoClase:
+        raise HTTPException(status_code=404, detail="AlumnoClase not found after update")
+    
+    updated_alumno_clase_dict = {
+        "id_clase": updatedAlumnoClase[0],
+        "ci": updatedAlumnoClase[1],
+        "id_equipamiento": updatedAlumnoClase[2]
+    }
+    
+    return updated_alumno_clase_dict
 
 #Delete para borrar alumnosclase
 @app.delete("/alumnosclase/{id_clase}/{ci}/{id_equipamiento}")
 async def delete_alumnosclase(id_clase: int, ci: str, id_equipamiento: int, db: Session = Depends(get_db)):
-    db_alumnosclase = db.query(AlumnoClase).filter(AlumnoClase.id_clase == id_clase, AlumnoClase.ci == ci, AlumnoClase.id_equipamiento == id_equipamiento).first()
-    if not db_alumnosclase:
+    query_alumnosclase = text("""
+        SELECT * FROM alumno_clase
+        WHERE id_clase = :id_clase AND ci = :ci AND id_equipamiento = :id_equipamiento
+    """)
+    result = db.execute(query_alumnosclase, {
+        "id_clase": id_clase,
+        "ci": ci,
+        "id_equipamiento": id_equipamiento
+    }).fetchone()
+    
+    if not result:
         raise HTTPException(status_code=404, detail="AlumnoClase not found")
-    db.delete(db_alumnosclase)
+    
+    query_delete = text("""
+        DELETE FROM alumno_clase
+        WHERE id_clase = :id_clase AND ci = :ci AND id_equipamiento = :id_equipamiento
+    """)
+    db.execute(query_delete, {
+        "id_clase": id_clase,
+        "ci": ci,
+        "id_equipamiento": id_equipamiento
+    })
     db.commit()
+    
     return {"message": "AlumnoClase deleted successfully"}
