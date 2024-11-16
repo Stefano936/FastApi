@@ -28,141 +28,346 @@ app.add_middleware(
 )
 
 ######################################################################
-#                            Actividades                             #
+#                            Actividades                             #  PRONTAAA
 ######################################################################
 
 #Get para obtener actividades
 @app.get("/actividades")
 async def get_actividades(db: Session = Depends(get_db)):
-    actividades = db.query(Actividades).all()
-    if not actividades:
+    query_actividades = text("SELECT * FROM actividades")
+    result = db.execute(query_actividades).fetchall()
+    if not result:
         raise HTTPException(status_code=404, detail="No hay actividades")
+    
+    actividades = []
+    
+    for row in result:
+        actividad = {
+            "id": row[0],
+            "descripcion": row[1],
+            "costo": row[2]
+        }
+        actividades.append(actividad)
+        
     return actividades
 
 #Post para subir actividades
 @app.post("/actividades")
-async def create_actividades(actividades:ActividadCreate, db: Session = Depends(get_db)):
-    nuevaActividad = Actividades(descripcion=actividades.descripcion, costo=actividades.costo)
-    db.add(nuevaActividad)
+async def create_actividades(actividades: dict, db: Session = Depends(get_db)):
+    query = text("""
+        INSERT INTO actividades (descripcion, costo)
+        VALUES (:descripcion, :costo)
+    """)
+    db.execute(query, {
+        "descripcion": actividades["descripcion"],
+        "costo": actividades["costo"]
+    })
     db.commit()
-    db.refresh(nuevaActividad)
-    return nuevaActividad
+    
+    # Obtener la actividad recién insertada
+    query_last_inserted = text("""
+        SELECT id, descripcion, costo
+        FROM actividades
+        WHERE id = (SELECT LAST_INSERT_ID())
+    """)
+    nuevaActividad = db.execute(query_last_inserted).fetchone()
+    
+    # Convertir la fila en un diccionario
+    nuevaActividad_dict = {
+        "id": nuevaActividad[0],
+        "descripcion": nuevaActividad[1],
+        "costo": nuevaActividad[2]
+    }
+    
+    return nuevaActividad_dict
 
 #Put para modificar actividades
 @app.put("/actividades/{id}")
-async def update_actividades(id: int, actividades: ActividadModify, db: Session = Depends(get_db)):
-    db_actividades = db.query(Actividades).filter(Actividades.id == id).first()
-    if not db_actividades:
+async def update_actividades(id: int, actividades: dict, db: Session = Depends(get_db)):
+    # Verificar la existencia de la actividad
+    query_actividades = text("SELECT id FROM actividades WHERE id = :id")
+    result = db.execute(query_actividades, {"id": id}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Actividades not found")
-    db_actividades.descripcion = actividades.descripcion
-    db_actividades.costo = actividades.costo
+    
+    # Actualizar la actividad
+    query_update = text("""
+        UPDATE actividades
+        SET descripcion = :descripcion,
+            costo = :costo
+        WHERE id = :id
+    """)
+    db.execute(query_update, {
+        "descripcion": actividades["descripcion"],
+        "costo": actividades["costo"],
+        "id": id
+    })
     db.commit()
-    db.refresh(db_actividades)
-    return db_actividades
+    
+    # Obtener la actividad actualizada
+    query_updated = text("""
+        SELECT id, descripcion, costo
+        FROM actividades
+        WHERE id = :id
+    """)
+    updatedActividad = db.execute(query_updated, {"id": id}).fetchone()
+    
+    # Convertir la fila en un diccionario
+    updatedActividad_dict = {
+        "id": updatedActividad[0],
+        "descripcion": updatedActividad[1],
+        "costo": updatedActividad[2]
+    }
+    
+    return updatedActividad_dict
 
-#Delete para borrar actividades
 @app.delete("/actividades/{id}")
 async def delete_actividades(id: int, db: Session = Depends(get_db)):
-    db_actividades = db.query(Actividades).filter(Actividades.id == id).first()
-    if not db_actividades:
+    # Verificar la existencia de la actividad
+    query_actividades = text("SELECT id FROM actividades WHERE id = :id")
+    result = db.execute(query_actividades, {"id": id}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Actividades not found")
-    db.delete(db_actividades)
+    
+    # Eliminar la actividad
+    query_delete = text("DELETE FROM actividades WHERE id = :id")
+    db.execute(query_delete, {"id": id})
     db.commit()
+    
     return {"message": "Actividades deleted successfully"}
 
-
 ######################################################################
-#                            Equipamiento                            #
+#                            Equipamiento                            #  PRONTAAA
 ######################################################################
     
 #Get para obtener equipamiento
 @app.get("/equipamiento")
 async def get_equipamiento(db: Session = Depends(get_db)):
-    equipamiento = db.query(Equipamiento).all()
-    if not equipamiento:
+    query_equipamiento = text("SELECT * FROM equipamiento")
+    result = db.execute(query_equipamiento).fetchall()
+    if not result:
         raise HTTPException(status_code=404, detail="No equipment found")
+    
+    equipamiento = []
+    
+    for row in result:
+        equipo = {
+            "id": row[0],
+            "id_actividad": row[1],
+            "descripcion": row[2],
+            "costo": row[3]
+        }
+        equipamiento.append(equipo)
+        
     return equipamiento
+
 
 #Post para subir equipamiento
 @app.post("/equipamiento")
-async def create_equipamiento(equipamiento:EquipamientoCreate, db: Session = Depends(get_db)):
-    nuevoEquipamiento = Equipamiento(id_actividad=equipamiento.id_actividad,descripcion=equipamiento.descripcion, costo=equipamiento.costo)
-    print(nuevoEquipamiento)
-    db.add(nuevoEquipamiento)
+async def create_equipamiento(equipamiento: dict, db: Session = Depends(get_db)):
+    query = text("""
+        INSERT INTO equipamiento (id_actividad, descripcion, costo)
+        VALUES (:id_actividad, :descripcion, :costo)
+    """)
+    db.execute(query, {
+        "id_actividad": equipamiento["id_actividad"],
+        "descripcion": equipamiento["descripcion"],
+        "costo": equipamiento["costo"]
+    })
     db.commit()
-    db.refresh(nuevoEquipamiento)
-    return nuevoEquipamiento
+    
+    # Obtener el equipamiento recién insertado
+    query_last_inserted = text("""
+        SELECT id, id_actividad, descripcion, costo
+        FROM equipamiento
+        WHERE id = (SELECT LAST_INSERT_ID())
+    """)
+    nuevoEquipamiento = db.execute(query_last_inserted).fetchone()
+    
+    # Convertir la fila en un diccionario
+    nuevoEquipamiento_dict = {
+        "id": nuevoEquipamiento[0],
+        "id_actividad": nuevoEquipamiento[1],
+        "descripcion": nuevoEquipamiento[2],
+        "costo": nuevoEquipamiento[3]
+    }
+    
+    return nuevoEquipamiento_dict
 
 #Put para modificar equipamiento
 @app.put("/equipamiento/{id}")
-async def update_equipamiento(id: int, equipamiento: EquipamientoModify, db: Session = Depends(get_db)):
-    db_equipamiento = db.query(Equipamiento).filter(Equipamiento.id == id).first()
-    if not db_equipamiento:
+async def update_equipamiento(id: int, equipamiento: dict, db: Session = Depends(get_db)):
+    # Verificar la existencia del equipamiento
+    query_equipamiento = text("SELECT id FROM equipamiento WHERE id = :id")
+    result = db.execute(query_equipamiento, {"id": id}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Equipamiento not found")
-    db_equipamiento.id_actividad = equipamiento.id_actividad
-    db_equipamiento.descripcion = equipamiento.descripcion
-    db_equipamiento.costo = equipamiento.costo
+    
+    # Actualizar el equipamiento
+    query_update = text("""
+        UPDATE equipamiento
+        SET id_actividad = :id_actividad,
+            descripcion = :descripcion,
+            costo = :costo
+        WHERE id = :id
+    """)
+    db.execute(query_update, {
+        "id_actividad": equipamiento["id_actividad"],
+        "descripcion": equipamiento["descripcion"],
+        "costo": equipamiento["costo"],
+        "id": id
+    })
     db.commit()
-    db.refresh(db_equipamiento)
-    return db_equipamiento
+    
+    # Obtener el equipamiento actualizado
+    query_updated = text("""
+        SELECT id, id_actividad, descripcion, costo
+        FROM equipamiento
+        WHERE id = :id
+    """)
+    updatedEquipamiento = db.execute(query_updated, {"id": id}).fetchone()
+    
+    # Convertir la fila en un diccionario
+    updatedEquipamiento_dict = {
+        "id": updatedEquipamiento[0],
+        "id_actividad": updatedEquipamiento[1],
+        "descripcion": updatedEquipamiento[2],
+        "costo": updatedEquipamiento[3]
+    }
+    
+    return updatedEquipamiento_dict
 
 #Delete para borrar equipamiento
 @app.delete("/equipamiento/{id}")
 async def delete_equipamiento(id: int, db: Session = Depends(get_db)):
-    db_equipamiento = db.query(Equipamiento).filter(Equipamiento.id == id).first()
-    if not db_equipamiento:
+    # Verificar la existencia del equipamiento
+    query_equipamiento = text("SELECT id FROM equipamiento WHERE id = :id")
+    result = db.execute(query_equipamiento, {"id": id}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Equipamiento not found")
-    db.delete(db_equipamiento)
+    
+    # Eliminar el equipamiento
+    query_delete = text("DELETE FROM equipamiento WHERE id = :id")
+    db.execute(query_delete, {"id": id})
     db.commit()
+    
     return {"message": "Equipamiento deleted successfully"}
 
 
 ######################################################################
-#                            Instructores                            #
+#                            Instructores                            # PRONTAAA
 ######################################################################
 
 
 #Get para obtener instructores
 @app.get("/instructores")
 async def get_instructores(db: Session = Depends(get_db)):
-    instructores = db.query(Instructores).all()
-    if not instructores:
+    query_instructores = text("SELECT * FROM instructores")
+    result = db.execute(query_instructores).fetchall()
+    if not result:
         raise HTTPException(status_code=404, detail="No instructors found")
+    
+    instructores = []
+    
+    for row in result:
+        instructor = {
+            "ci": row[0],
+            "nombre": row[1],
+            "apellido": row[2]
+        }
+        instructores.append(instructor)
+        
     return instructores
 
 #Post para subir instructores
 @app.post("/instructores")
-async def create_instructores(instructores: InstructorCreate, db: Session = Depends(get_db)):
-    nuevoInstructor = Instructores(ci=instructores.ci, nombre=instructores.nombre, apellido=instructores.apellido)
-    db.add(nuevoInstructor)
+async def create_instructores(instructores: dict, db: Session = Depends(get_db)):
+    query = text("""
+        INSERT INTO instructores (ci, nombre, apellido)
+        VALUES (:ci, :nombre, :apellido)
+    """)
+    db.execute(query, {
+        "ci": instructores["ci"],
+        "nombre": instructores["nombre"],
+        "apellido": instructores["apellido"]
+    })
     db.commit()
-    db.refresh(nuevoInstructor)
-    return nuevoInstructor
+    
+    # Obtener el instructor recién insertado
+    query_last_inserted = text("""
+        SELECT ci, nombre, apellido
+        FROM instructores
+        WHERE ci = :ci
+    """)
+    nuevoInstructor = db.execute(query_last_inserted, {"ci": instructores["ci"]}).fetchone()
+    
+    # Convertir la fila en un diccionario
+    nuevoInstructor_dict = {
+        "ci": nuevoInstructor[0],
+        "nombre": nuevoInstructor[1],
+        "apellido": nuevoInstructor[2]
+    }
+    
+    return nuevoInstructor_dict
 
 #Put para modificar instructores
 @app.put("/instructores/{ci}")
-async def update_instructores(ci: str, instructores: InstructorModify, db: Session = Depends(get_db)):
-    db_instructores = db.query(Instructores).filter(Instructores.ci == ci).first()
-    if not db_instructores:
+async def update_instructores(ci: str, instructores: dict, db: Session = Depends(get_db)):
+    # Verificar la existencia del instructor
+    query_instructor = text("SELECT ci FROM instructores WHERE ci = :ci")
+    result = db.execute(query_instructor, {"ci": ci}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Instructor not found")
-    db_instructores.nombre = instructores.nombre
-    db_instructores.apellido = instructores.apellido
+    
+    # Actualizar el instructor
+    query_update = text("""
+        UPDATE instructores
+        SET nombre = :nombre,
+            apellido = :apellido
+        WHERE ci = :ci
+    """)
+    db.execute(query_update, {
+        "nombre": instructores["nombre"],
+        "apellido": instructores["apellido"],
+        "ci": ci
+    })
     db.commit()
-    db.refresh(db_instructores)
-    return db_instructores
+    
+    # Obtener el instructor actualizado
+    query_updated = text("""
+        SELECT ci, nombre, apellido
+        FROM instructores
+        WHERE ci = :ci
+    """)
+    updatedInstructor = db.execute(query_updated, {"ci": ci}).fetchone()
+    
+    # Convertir la fila en un diccionario
+    updatedInstructor_dict = {
+        "ci": updatedInstructor[0],
+        "nombre": updatedInstructor[1],
+        "apellido": updatedInstructor[2]
+    }
+    
+    return updatedInstructor_dict
 
 #Delete para borrar instructores
 @app.delete("/instructores/{ci}")
 async def delete_instructores(ci: str, db: Session = Depends(get_db)):
-    db_instructores = db.query(Instructores).filter(Instructores.ci == ci).first()
-    if not db_instructores:
+    # Verificar la existencia del instructor
+    query_instructor = text("SELECT ci FROM instructores WHERE ci = :ci")
+    result = db.execute(query_instructor, {"ci": ci}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Instructor not found")
-    db.delete(db_instructores)
+    
+    # Eliminar el instructor
+    query_delete = text("DELETE FROM instructores WHERE ci = :ci")
+    db.execute(query_delete, {"ci": ci})
     db.commit()
+    
     return {"message": "Instructor deleted successfully"}
 
 ######################################################################
-#                            Clases                                  #
+#                            Clases                                  #  PRONTAAA
 ######################################################################
 
 #Get para obtener clases
@@ -293,7 +498,7 @@ async def delete_clases(id: int, db: Session = Depends(get_db)):
     return {"message": "Clase deleted successfully"}
 
 ######################################################################
-#                            Turnos                                  #
+#                            Turnos                                  #  PRONTAAA
 ######################################################################
 
 #Get para obtener turnos
@@ -374,7 +579,7 @@ async def delete_turnos(id: int, db: Session = Depends(get_db)):
     return {"message": "Turno deleted successfully"}
 
 ######################################################################
-#                            Alumnos                                 #
+#                            Alumnos                                 #  PRONTAAA
 ######################################################################
 
 #Get para obtener alumnos
