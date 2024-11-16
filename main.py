@@ -168,42 +168,128 @@ async def delete_instructores(ci: str, db: Session = Depends(get_db)):
 #Get para obtener clases
 @app.get("/clases")
 async def get_clases(db: Session = Depends(get_db)):
-    clases = db.query(Clase).all()
-    if not clases:
-        raise HTTPException(status_code=404, detail="No classes found")
+    query_clases = text("SELECT * FROM clase")
+    result = db.execute(query_clases).fetchall()
+    if not result:
+        raise HTTPException(status_code=404, detail="No clases found")
+    
+    clases = []
+    
+    for row in result:
+        clase = {
+            "id": row[0],
+            "ci_instructor": row[1],
+            "id_actividad": row[2],
+            "id_turno": row[3],
+            "dictada": row[4]
+        }
+        clases.append(clase)
+        
     return clases
 
 #Post para subir clases
 @app.post("/clases")
-async def create_clases(clases: ClaseCreate, db: Session = Depends(get_db)):
-    nuevaClase = Clase(ci_instructor=clases.ci_instructor, id_actividad=clases.id_actividad, id_turno=clases.id_turno, dictada=clases.dictada)
-    db.add(nuevaClase)
+async def create_clases(clases: dict, db: Session = Depends(get_db)):
+    # Verificar la existencia del ci_instructor
+    query_instructor = text("SELECT ci FROM instructores WHERE ci = :ci_instructor")
+    result = db.execute(query_instructor, {"ci_instructor": clases["ci_instructor"]}).fetchone()
+    if not result:
+        raise HTTPException(status_code=400, detail="Instructor not found")
+    
+    query = text("""
+        INSERT INTO clase (ci_instructor, id_actividad, id_turno, dictada)
+        VALUES (:ci_instructor, :id_actividad, :id_turno, :dictada)
+    """)
+    db.execute(query, {
+        "ci_instructor": clases["ci_instructor"],
+        "id_actividad": clases["id_actividad"],
+        "id_turno": clases["id_turno"],
+        "dictada": clases["dictada"]
+    })
     db.commit()
-    db.refresh(nuevaClase)
-    return nuevaClase
+    
+    # Obtener la clase recién insertada
+    query_last_inserted = text("""
+        SELECT id, ci_instructor, id_actividad, id_turno, dictada
+        FROM clase
+        WHERE id = LAST_INSERT_ID()
+    """)
+    nuevaClase = db.execute(query_last_inserted).fetchone()
+    
+    # Convertir la fila en un diccionario
+    nuevaClase_dict = {
+        "id": nuevaClase[0],
+        "ci_instructor": nuevaClase[1],
+        "id_actividad": nuevaClase[2],
+        "id_turno": nuevaClase[3],
+        "dictada": nuevaClase[4]
+    }
+    
+    return nuevaClase_dict
 
 #Put para modificar clases
 @app.put("/clases/{id}")
-async def update_clases(id: int, clases: ClaseModify, db: Session = Depends(get_db)):
-    db_clases = db.query(Clase).filter(Clase.id == id).first()
-    if not db_clases:
+async def update_clases(id: int, clases: dict, db: Session = Depends(get_db)):
+    # Verificar la existencia de la clase
+    query_clase = text("SELECT id FROM clase WHERE id = :id")
+    result = db.execute(query_clase, {"id": id}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Clase not found")
-    db_clases.ci_instructor = clases.ci_instructor
-    db_clases.id_actividad = clases.id_actividad
-    db_clases.id_turno = clases.id_turno
-    db_clases.dictada = clases.dictada
+    
+    # Actualizar la clase
+    query_update = text("""
+        UPDATE clase
+        SET ci_instructor = :ci_instructor,
+            id_actividad = :id_actividad,
+            id_turno = :id_turno,
+            dictada = :dictada
+        WHERE id = :id
+    """)
+    db.execute(query_update, {
+        "ci_instructor": clases["ci_instructor"],
+        "id_actividad": clases["id_actividad"],
+        "id_turno": clases["id_turno"],
+        "dictada": clases["dictada"],
+        "id": id
+    })
     db.commit()
-    db.refresh(db_clases)
-    return db_clases
+    
+    # Obtener la clase actualizada
+    query_updated = text("""
+        SELECT id, ci_instructor, id_actividad, id_turno, dictada
+        FROM clase
+        WHERE id = :id
+    """)
+    updatedClase = db.execute(query_updated, {"id": id}).fetchone()
+    
+    # Convertir la fila en un diccionario
+    updatedClase_dict = {
+        "id": updatedClase[0],
+        "ci_instructor": updatedClase[1],
+        "id_actividad": updatedClase[2],
+        "id_turno": updatedClase[3],
+        "dictada": updatedClase[4]
+    }
+    
+    return updatedClase_dict
 
 #Delete para borrar clases
 @app.delete("/clases/{id}")
 async def delete_clases(id: int, db: Session = Depends(get_db)):
-    db_clases = db.query(Clase).filter(Clase.id == id).first()
-    if not db_clases:
+    # Eliminar filas dependientes en alumno_clase
+    query_alumno_clase = text("DELETE FROM alumno_clase WHERE id_clase = :id")
+    db.execute(query_alumno_clase, {"id": id})
+    
+    # Eliminar la clase
+    query_clases = text("SELECT * FROM clase WHERE id = :id")
+    result = db.execute(query_clases, {"id": id}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Clase not found")
-    db.delete(db_clases)
+    
+    query = text("DELETE FROM clase WHERE id = :id")
+    db.execute(query, {"id": id})
     db.commit()
+
     return {"message": "Clase deleted successfully"}
 
 ######################################################################
