@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from models import Actividades, Equipamiento, Instructores, Clase, AlumnoClase, Turnos, Alumnos, User
 from squemas import ActividadCreate, EquipamientoCreate, ActividadModify, EquipamientoModify, TurnoCreate, TurnoModify, InstructorCreate, InstructorModify
 from squemas import ClaseCreate, ClaseModify, AlumnoCreate, AlumnoModify, AlumnoClaseCreate, AlumnoClaseModify, LoginRequest
+from datetime import timedelta
+
 
 app = FastAPI()     
 def get_db():
@@ -211,15 +213,44 @@ async def delete_clases(id: int, db: Session = Depends(get_db)):
 #Get para obtener turnos
 @app.get("/turnos")
 async def get_turnos(db: Session = Depends(get_db)):
-    turnos = db.query(Turnos).all()
-    if not turnos:
+    query_turnos = text("SELECT * FROM turnos")
+    result = db.execute(query_turnos).fetchall()
+    if not result:
         raise HTTPException(status_code=404, detail="No turnos found")
+    
+    turnos = []
+    
+    for row in result:
+        time_delta_inicio = row[1]
+        time_delta_fin = row[2]
+
+        hours_inicio, remainder_inicio = divmod(time_delta_inicio.seconds, 3600)
+        minutes_inicio, seconds_inicio = divmod(remainder_inicio, 60)
+        formatted_time_inicio = f"{hours_inicio:02d}:{minutes_inicio:02d}"
+
+        hours_fin, remainder_fin = divmod(time_delta_fin.seconds, 3600)
+        minutes_fin, seconds_fin = divmod(remainder_fin, 60)
+        formatted_time_fin = f"{hours_fin:02d}:{minutes_fin:02d}"
+
+        turno = {
+            "id": row[0],
+            "hora_inicio": formatted_time_inicio,
+            "hora_fin": formatted_time_fin
+        }
+        turnos.append(turno)
+        
     return turnos
 
 #Post para subir turnos
 @app.post("/turnos")
 async def create_turnos(turnos: TurnoCreate, db: Session = Depends(get_db)):
-    nuevoTurno = Turnos(hora_inicio=turnos.hora_inicio, hora_fin=turnos.hora_fin)
+    hora_inicio_parts = [int(part) for part in turnos.hora_inicio.split(":")]
+    hora_fin_parts = [int(part) for part in turnos.hora_fin.split(":")]
+
+    hora_inicio_timedelta = timedelta(hours=hora_inicio_parts[0], minutes=hora_inicio_parts[1])
+    hora_fin_timedelta = timedelta(hours=hora_fin_parts[0], minutes=hora_fin_parts[1])
+
+    nuevoTurno = Turnos(hora_inicio=hora_inicio_timedelta, hora_fin=hora_fin_timedelta)
     db.add(nuevoTurno)
     db.commit()
     db.refresh(nuevoTurno)
@@ -231,8 +262,13 @@ async def update_turnos(id: int, turnos: TurnoModify, db: Session = Depends(get_
     db_turnos = db.query(Turnos).filter(Turnos.id == id).first()
     if not db_turnos:
         raise HTTPException(status_code=404, detail="Turnos not found")
-    db_turnos.hora_inicio = turnos.hora_inicio
-    db_turnos.hora_fin = turnos.hora_fin
+    
+    hora_inicio_parts = [int(part) for part in turnos.hora_inicio.split(":")]
+    hora_fin_parts = [int(part) for part in turnos.hora_fin.split(":")]
+
+    db_turnos.hora_inicio = timedelta(hours=hora_inicio_parts[0], minutes=hora_inicio_parts[1])
+    db_turnos.hora_fin = timedelta(hours=hora_fin_parts[0], minutes=hora_fin_parts[1])
+    
     db.commit()
     db.refresh(db_turnos)
     return db_turnos
@@ -240,12 +276,16 @@ async def update_turnos(id: int, turnos: TurnoModify, db: Session = Depends(get_
 #Delete para borrar turnos
 @app.delete("/turnos/{id}")
 async def delete_turnos(id: int, db: Session = Depends(get_db)):
-    db_turnos = db.query(Turnos).filter(Turnos.id == id).first()
-    if not db_turnos:
+    query_turnos = text("SELECT * FROM turnos WHERE id = :id")
+    result = db.execute(query_turnos, {"id": id}).fetchone()
+    if not result:
         raise HTTPException(status_code=404, detail="Turnos not found")
-    db.delete(db_turnos)
+    
+    query = text("DELETE FROM turnos WHERE id = :id")
+    db.execute(query, {"id": id})
     db.commit()
-    return {"message": "Turnos deleted successfully"}
+
+    return {"message": "Turno deleted successfully"}
 
 ######################################################################
 #                            Alumnos                                 #
@@ -361,8 +401,6 @@ async def delete_alumnos(ci: str, db: Session = Depends(get_db)):
     db.execute(query_delete)
     db.commit()
     return {"message": "Alumno deleted successfully"}
-
-#En vez de filter tenemos que usar el query, select algo from tabla ta
 
 ######################################################################
 #                           Registro                                 #
