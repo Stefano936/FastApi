@@ -699,9 +699,11 @@ async def delete_alumnos(ci: str, db: Session = Depends(get_db)):
 
 @app.post("/login")
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.ci == request.ci).first()
-    if user and user.contraseña == request.contraseña:
-        return {"message": "Login successful", "correo": user.correo}
+    query_user = text("SELECT ci, correo, contraseña FROM login WHERE ci = :ci")
+    user = db.execute(query_user, {"ci": request.ci}).fetchone()
+    
+    if user and user[2] == request.contraseña:
+        return {"message": "Login successful", "correo": user[1]}
     else:
         raise HTTPException(status_code=401, detail="Invalid CI or password")
     
