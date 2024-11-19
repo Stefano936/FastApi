@@ -703,7 +703,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.execute(query_user, {"ci": request.ci}).fetchone()
     
     if user and user[2] == request.contraseña:
-        return {"message": "Login successful", "correo": user[1]}
+        return {"message": "Login successful", "correo": user[1], "ci": user[0]}
     else:
         raise HTTPException(status_code=401, detail="Invalid CI or password")
     
